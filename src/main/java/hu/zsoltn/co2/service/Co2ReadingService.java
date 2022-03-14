@@ -1,34 +1,44 @@
 package hu.zsoltn.co2.service;
 
+import hu.zsoltn.co2.db.Co2Reading;
+import hu.zsoltn.co2.db.Co2ReadingRepository;
 import hu.zsoltn.co2.dto.Co2ReadingDto;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
  * Service to save and find CO2 readings per city and district
  */
 @Service
+@RequiredArgsConstructor
 public class Co2ReadingService {
 
-  private List<Co2ReadingDto> dtos = new ArrayList<>();
+  private final Co2ReadingRepository repository;
 
   public List<Co2ReadingDto> findAll(
       final String cityId,
       final String districtId) {
-    return dtos.stream()
-        .filter(dto -> Objects.equals(dto.getCityId(), cityId))
-        .filter(dto -> Objects.equals(dto.getDistrictId(), districtId))
+    return repository.findAllByCityIdAndDistrictId(cityId, districtId).stream()
+        .map(Co2ReadingService::toDto)
         .collect(Collectors.toList());
   }
 
   public void add(final String cityId, final String districtId, final int concentration) {
-    final Co2ReadingDto dto = new Co2ReadingDto(cityId, districtId, Instant.now(), concentration);
-    dtos.add(dto);
+    final Co2Reading entity = new Co2Reading(UUID.randomUUID(), cityId, districtId, Instant.now(), concentration);
+    repository.save(entity);
+  }
+
+  private static Co2ReadingDto toDto(final Co2Reading entity) {
+    return new Co2ReadingDto(
+        entity.getCityId(),
+        entity.getDistrictId(),
+        entity.getCreatedAt(),
+        entity.getConcentration());
   }
 
 }
